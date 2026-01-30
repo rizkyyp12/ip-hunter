@@ -11,7 +11,7 @@ wget -O /usr/bin/modpes.py "$BASE_URL/modpes.py" || exit 1
 chmod +x /usr/bin/modpes.py
 
 # modpes.py
-wget -O /usr/bin/modpes.py "$BASE_URL/modpes.py" || exit 1
+wget -O /usr/bin/android.py "$BASE_URL/android.py" || exit 1
 chmod +x /usr/bin/android.py
 
 # LuCI controller
