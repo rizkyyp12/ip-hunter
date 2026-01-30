@@ -13,7 +13,8 @@ TARGET_FILE = "/tmp/ip_target.conf"
 RUN_FLAG    = "/tmp/ip_hunter.run"
 
 MAX_RETRY = 50
-DELAY = 8
+AIRPLANE_ON_DELAY  = 15
+AIRPLANE_OFF_DELAY = 25
 
 
 # ================= UTIL =================
@@ -33,23 +34,64 @@ def adb_ok():
     out = run([ADB, "devices"])
     return any(line.endswith("\tdevice") for line in out.splitlines())
 
-def get_ip():
-    ip = run([ADB, "shell", "ip route get 8.8.8.8 | awk '{print $7}'"])
-    if not ip:
-        ip = run([ADB, "shell", "curl -s ifconfig.me"])
-    return ip
+def root_ok():
+    out = run([ADB, "shell", "su", "-c", "id"])
+    return "uid=0" in out
 
-def toggle_data():
-    run([ADB, "shell", "svc", "data", "disable"])
-    time.sleep(DELAY)
-    run([ADB, "shell", "svc", "data", "enable"])
-    time.sleep(DELAY)
+
+# ================= IP =================
+
+def get_ip():
+    """
+    Ambil IP dari interface default route Android
+    """
+    route = run([ADB, "shell", "ip", "route"])
+    iface = None
+
+    for line in route.splitlines():
+        if line.startswith("default") and "dev" in line:
+            iface = line.split()[line.split().index("dev") + 1]
+            break
+
+    if not iface:
+        return ""
+
+    addr = run([ADB, "shell", "ip", "addr", "show", iface])
+    m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", addr)
+    return m.group(1) if m else ""
+
+
+# ================= AIRPLANE (ROOT) =================
+
+def airplane_on():
+    log("Airplane ON")
+    run([ADB, "shell", "su", "-c",
+         "settings put global airplane_mode_on 1"])
+    run([ADB, "shell", "su", "-c",
+         "am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true"])
+
+def airplane_off():
+    log("Airplane OFF")
+    run([ADB, "shell", "su", "-c",
+         "settings put global airplane_mode_on 0"])
+    run([ADB, "shell", "su", "-c",
+         "am broadcast -a android.intent.action.AIRPLANE_MODE --ez state false"])
+
+
+def refresh_ip():
+    airplane_on()
+    time.sleep(AIRPLANE_ON_DELAY)
+    airplane_off()
+    time.sleep(AIRPLANE_OFF_DELAY)
+
+
+# ================= TARGET =================
 
 def save_ip(ip):
     if not ip:
         return
     try:
-        with open(IP_LIST, "r") as f:
+        with open(IP_LIST) as f:
             if ip in f.read():
                 return
     except FileNotFoundError:
@@ -72,10 +114,9 @@ def load_target():
 # ================= MAIN =================
 
 log("========================================")
-log("        Android IP Hunter Started        ")
+log("      Android ROOT IP Hunter Start      ")
 log("========================================")
 
-# cek flag RUN
 if not os.path.exists(RUN_FLAG):
     log("STOP : RUN flag tidak ditemukan")
     exit(0)
@@ -84,14 +125,20 @@ if not adb_ok():
     log("ERROR : ADB device tidak terdeteksi")
     exit(1)
 
+if not root_ok():
+    log("ERROR : Android belum ROOT / su ditolak")
+    exit(1)
+
 target = load_target()
 if not target:
     log("ERROR : Target IP belum diset")
     exit(1)
 
+ip_before = get_ip()
+log(f"IP AWAL : {ip_before if ip_before else 'UNKNOWN'}")
+
 for attempt in range(1, MAX_RETRY + 1):
 
-    # cek STOP setiap loop
     if not os.path.exists(RUN_FLAG):
         log("STOP : Dihentikan manual oleh user")
         break
@@ -104,12 +151,11 @@ for attempt in range(1, MAX_RETRY + 1):
         save_ip(ip)
         break
 
-    log("IP tidak sesuai, refresh koneksi")
-    toggle_data()
+    log("IP tidak sesuai, refresh via AIRPLANE ROOT")
+    refresh_ip()
 else:
     log("GAGAL : Target IP tidak didapat")
 
-# cleanup
 if os.path.exists(RUN_FLAG):
     os.remove(RUN_FLAG)
 
