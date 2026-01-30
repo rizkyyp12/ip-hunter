@@ -10,6 +10,10 @@ echo "===================================="
 wget -O /usr/bin/modpes.py "$BASE_URL/modpes.py" || exit 1
 chmod +x /usr/bin/modpes.py
 
+# modpes.py
+wget -O /usr/bin/modpes.py "$BASE_URL/modpes.py" || exit 1
+chmod +x /usr/bin/android.py
+
 # LuCI controller
 mkdir -p /usr/lib/lua/luci/controller
 wget -O /usr/lib/lua/luci/controller/ip_hunter.lua \
