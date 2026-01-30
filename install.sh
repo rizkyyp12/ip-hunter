@@ -1,65 +1,26 @@
 #!/bin/sh
-# =========================================
-# IP Hunter Installer for OpenWrt
-# Author : YourName
-# =========================================
 
-set -e
+BASE_URL="https://raw.githubusercontent.com/rizkyyp12/ip-hunter/main.py"
 
-REPO_BASE="https://raw.githubusercontent.com/USERNAME/ip-hunter-openwrt/main"
+echo "Installing IP Hunter for OpenWrt"
 
-echo "========================================="
-echo "  Installing IP Hunter for OpenWrt"
-echo "========================================="
-
-# --- cek root ---
-if [ "$(id -u)" != "0" ]; then
-    echo "ERROR: Jalankan sebagai root"
-    exit 1
-fi
-
-# --- cek python3 ---
-if ! command -v python3 >/dev/null; then
-    echo "[INFO] Installing python3..."
-    opkg update
-    opkg install python3
-fi
-
-# --- cek adb ---
-if ! command -v adb >/dev/null; then
-    echo "[INFO] Installing adb..."
-    opkg update
-    opkg install adb
-fi
-
-# --- download python script ---
-echo "[INFO] Installing modpes.py"
-wget -O /usr/bin/modpes.py "$REPO_BASE/modpes.py"
+# modpes.py
+wget -O /usr/bin/modpes.py $BASE_URL/modpes.py || exit 1
 chmod +x /usr/bin/modpes.py
 
-# --- install LuCI files ---
-echo "[INFO] Installing LuCI files"
-
+# LuCI controller
 mkdir -p /usr/lib/lua/luci/controller
-mkdir -p /usr/lib/lua/luci/view
-
 wget -O /usr/lib/lua/luci/controller/ip_hunter.lua \
-    "$REPO_BASE/luci/controller/ip_hunter.lua"
+  $BASE_URL/luci/controller/ip_hunter.lua || exit 1
 
+# LuCI view
+mkdir -p /usr/lib/lua/luci/view
 wget -O /usr/lib/lua/luci/view/ip_hunter.htm \
-    "$REPO_BASE/luci/view/ip_hunter.htm"
+  $BASE_URL/luci/view/ip_hunter.htm || exit 1
 
-# --- permission ---
-chmod 644 /usr/lib/lua/luci/controller/ip_hunter.lua
-chmod 644 /usr/lib/lua/luci/view/ip_hunter.htm
+# restart luci
+rm -rf /tmp/luci-*
+/etc/init.d/rpcd restart
+/etc/init.d/uhttpd restart
 
-# --- cleanup old data ---
-rm -f /tmp/ip_hunter.run
-rm -f /tmp/ip_target.conf
-
-echo "========================================="
-echo "  IP Hunter Installed Successfully"
-echo "========================================="
-echo " LuCI Menu : Modem -> IP Hunter"
-echo " Reboot LuCI jika menu belum muncul"
-echo "========================================="
+echo "IP Hunter installed successfully"
