@@ -8,3 +8,9 @@ script ini di kembangkan secara pribadi oleh rizky yoga pratama script hanyalah 
 ```
 wget -O - https://raw.githubusercontent.com/rizkyyp12/ip-hunter/main.py/install.sh | sh
 ```
+
+# uninstall 
+
+```
+wget -O - https://raw.githubusercontent.com/rizkyyp12/ip-hunter/main.py/uninstall.sh | sh
+```
