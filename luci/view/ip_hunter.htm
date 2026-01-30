@@ -1,0 +1,71 @@
+<%+header%>
+
+<h2>IP Hunter</h2>
+
+<form method="post">
+    <div class="cbi-section">
+
+        <label><strong>Target IP / Prefix</strong></label><br>
+
+        <input type="text"
+               name="target_ip"
+               value="<%= target or '' %>"
+               placeholder="contoh: 10.3"
+               style="width:220px">
+
+        <br><br>
+
+        <button class="cbi-button cbi-button-apply"
+                name="action"
+                value="run"
+                type="submit">
+            RUN IP HUNTER
+        </button>
+
+        <button class="cbi-button cbi-button-reset"
+                name="action"
+                value="stop"
+                type="submit">
+            STOP
+        </button>
+
+        <% if running then %>
+            <p style="color:green"><strong>Status:</strong> RUNNING</p>
+        <% else %>
+            <p style="color:red"><strong>Status:</strong> STOPPED</p>
+        <% end %>
+
+        <p class="help-text">
+            Contoh target:
+            <br>10.3 → 10.30.x.x – 10.39.x.x
+            <br>36.68 → 36.68.x.x
+        </p>
+
+    </div>
+</form>
+
+<hr>
+
+<h3>Daftar IP Didapat</h3>
+
+<table class="table">
+    <tr>
+        <th>No</th>
+        <th>IP Address</th>
+    </tr>
+
+    <% for i, ip in ipairs(ips) do %>
+    <tr>
+        <td><%= i %></td>
+        <td><%= ip %></td>
+    </tr>
+    <% end %>
+
+    <% if #ips == 0 then %>
+    <tr>
+        <td colspan="2">Belum ada IP</td>
+    </tr>
+    <% end %>
+</table>
+
+<%+footer%>
